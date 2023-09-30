@@ -48,6 +48,8 @@ determinize_test = executable(
   'determinize_test',
   dependencies: [determinize, catch2],
   sources: [
-    'src/test.cpp',
+    'test/catch.cpp',
+    'test/test.cpp',
+    'test/test.s',
   ],
 )
