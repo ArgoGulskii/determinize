@@ -20,6 +20,21 @@ struct Immediate {
   uint64_t value;
 };
 
+struct Memory {
+  Memory(ZydisRegister base, int64_t displacement, uint16_t size)
+      : base(base), index(ZYDIS_REGISTER_NONE), scale(0), displacement(displacement), size(size) {}
+
+  Memory(ZydisRegister base, ZydisRegister index, uint8_t scale, int64_t displacement,
+         uint16_t size)
+      : base(base), index(index), scale(scale), displacement(displacement), size(size) {}
+
+  ZydisRegister base;
+  ZydisRegister index;
+  uint8_t scale;
+  int64_t displacement;
+  uint16_t size;
+};
+
 struct RelocatedData {
   explicit RelocatedData(std::vector<char> buf) : data(std::move(buf)) {}
   std::vector<char> data;
@@ -54,6 +69,18 @@ struct Thunk {
     auto& operand = req.operands[req.operand_count++];
     operand.type = ZYDIS_OPERAND_TYPE_IMMEDIATE;
     operand.imm.u = imm.value;
+    return AppendOperand(req, operands...);
+  }
+
+  template <typename... Operands>
+  void AppendOperand(ZydisEncoderRequest& req, Memory mem, Operands... operands) {
+    auto& operand = req.operands[req.operand_count++];
+    operand.type = ZYDIS_OPERAND_TYPE_MEMORY;
+    operand.mem.base = mem.base;
+    operand.mem.index = mem.index;
+    operand.mem.scale = mem.scale;
+    operand.mem.displacement = mem.displacement;
+    operand.mem.size = mem.size;
     return AppendOperand(req, operands...);
   }
 
@@ -118,18 +145,4 @@ struct Thunk {
   std::unordered_map<size_t, std::vector<Relocation>> relocations_;
 };
 
-bool Replace(void* replacement, void* target, size_t target_length);
-
-template <typename T, typename... Args>
-static bool Replace(T (*replacement)(Args...), T (*target)(Args...), size_t target_length) {
-  return Replace(reinterpret_cast<void*>(replacement), reinterpret_cast<void*>(target),
-                 target_length);
-}
-
-template <typename T, typename... Args>
-static bool Replace(T (*replacement)(Args..., ...), T (*target)(Args..., ...),
-                    size_t target_length) {
-  return Replace(reinterpret_cast<void*>(replacement), reinterpret_cast<void*>(target),
-                 target_length);
-}
 }  // namespace determinize

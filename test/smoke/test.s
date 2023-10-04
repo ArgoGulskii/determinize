@@ -1,15 +1,15 @@
 .intel_syntax noprefix
 
 .section .text
-.global rcpps_wrapper
-rcpps_wrapper:
+.global rcpps_smoke
+rcpps_smoke:
   movaps xmm2, [rdi]
-  call rcpps_impl
+  call rcpps_smoke_impl
   movaps [rdi], xmm1
   ret
 
-.global rcpps_impl
-rcpps_impl:
+.global rcpps_smoke_impl
+rcpps_smoke_impl:
   rcpps xmm1, xmm2
   mov rax, [rip + deadbeef]
   nop
@@ -22,8 +22,8 @@ rcpps_impl:
 deadbeef:
   .quad 0xdeadbeefdeadbeef
 
-.global rcpps_replacement
-rcpps_replacement:
+.global rcpps_smoke_replacement
+rcpps_smoke_replacement:
   movaps xmm1, [rip + funny_numbers]
   ret
 .p2align 4

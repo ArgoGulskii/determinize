@@ -1,4 +1,4 @@
-#include <determinize.h>
+#include <determinize/determinize.h>
 
 // TODO: Windows
 #include <stdio.h>
@@ -12,6 +12,8 @@
 #include <vector>
 
 #include <Zydis.h>
+
+#include <determinize/thunk.h>
 
 #include "trampoline.h"
 #include "util.h"
@@ -28,6 +30,14 @@ size_t Append(std::vector<char>& vec, T value) {
   vec.resize(size + sizeof(value));
   memcpy(&vec[size], &value, sizeof(value));
   return size;
+}
+
+std::optional<size_t> GetInstructionLength(void* p) {
+  ZydisDisassembledInstruction instruction;
+  auto rc = ZydisDisassembleIntel(ZYDIS_MACHINE_MODE_LONG_64, reinterpret_cast<ZyanU64>(p), p, 4096,
+                                  &instruction);
+  if (!ZYAN_SUCCESS(rc)) return {};
+  return instruction.info.length;
 }
 
 bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begin,
@@ -55,7 +65,9 @@ bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begi
 
     printf("  0x%016lx  %s\n", reinterpret_cast<long>(current_instruction), instruction.text);
     offset += instruction.info.length;
-    thunk.Relocate(&instruction);
+    if (!thunk.Relocate(&instruction)) {
+      return false;
+    }
   }
 
   void* return_address = p + offset;

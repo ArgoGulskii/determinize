@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <map>
 #include <optional>
 
 #include "util.h"

@@ -1,0 +1,542 @@
+#pragma once
+
+#define CHECK_APPROXIMATE(lhs, rhs)        \
+  CHECK_THAT(lhs, WithinRel(rhs, 0.001f)); \
+  CHECK(lhs != rhs)
+
+#define CHECK_EXACT(lhs, rhs) CHECK(lhs == rhs)
+
+#if 0
+
+#if defined(__ASSEMBLER__)
+.macro for_all_xmm_pairs x
+\x 0, 0
+\x 0, 1
+.endm
+#else
+#define FOR_ALL_XMM_PAIRS() \
+  XMM_PAIR(0, 0)            \
+  XMM_PAIR(0, 1)
+#endif
+
+#else
+#if defined(__ASSEMBLER__)
+.macro for_all_xmm_pairs x
+\x 0, 0
+\x 0, 1
+\x 0, 2
+\x 0, 3
+\x 0, 4
+\x 0, 5
+\x 0, 6
+\x 0, 7
+\x 0, 8
+\x 0, 9
+\x 0, 10
+\x 0, 11
+\x 0, 12
+\x 0, 13
+\x 0, 14
+\x 0, 15
+\x 1, 0
+\x 1, 1
+\x 1, 2
+\x 1, 3
+\x 1, 4
+\x 1, 5
+\x 1, 6
+\x 1, 7
+\x 1, 8
+\x 1, 9
+\x 1, 10
+\x 1, 11
+\x 1, 12
+\x 1, 13
+\x 1, 14
+\x 1, 15
+\x 2, 0
+\x 2, 1
+\x 2, 2
+\x 2, 3
+\x 2, 4
+\x 2, 5
+\x 2, 6
+\x 2, 7
+\x 2, 8
+\x 2, 9
+\x 2, 10
+\x 2, 11
+\x 2, 12
+\x 2, 13
+\x 2, 14
+\x 2, 15
+\x 3, 0
+\x 3, 1
+\x 3, 2
+\x 3, 3
+\x 3, 4
+\x 3, 5
+\x 3, 6
+\x 3, 7
+\x 3, 8
+\x 3, 9
+\x 3, 10
+\x 3, 11
+\x 3, 12
+\x 3, 13
+\x 3, 14
+\x 3, 15
+\x 4, 0
+\x 4, 1
+\x 4, 2
+\x 4, 3
+\x 4, 4
+\x 4, 5
+\x 4, 6
+\x 4, 7
+\x 4, 8
+\x 4, 9
+\x 4, 10
+\x 4, 11
+\x 4, 12
+\x 4, 13
+\x 4, 14
+\x 4, 15
+\x 5, 0
+\x 5, 1
+\x 5, 2
+\x 5, 3
+\x 5, 4
+\x 5, 5
+\x 5, 6
+\x 5, 7
+\x 5, 8
+\x 5, 9
+\x 5, 10
+\x 5, 11
+\x 5, 12
+\x 5, 13
+\x 5, 14
+\x 5, 15
+\x 6, 0
+\x 6, 1
+\x 6, 2
+\x 6, 3
+\x 6, 4
+\x 6, 5
+\x 6, 6
+\x 6, 7
+\x 6, 8
+\x 6, 9
+\x 6, 10
+\x 6, 11
+\x 6, 12
+\x 6, 13
+\x 6, 14
+\x 6, 15
+\x 7, 0
+\x 7, 1
+\x 7, 2
+\x 7, 3
+\x 7, 4
+\x 7, 5
+\x 7, 6
+\x 7, 7
+\x 7, 8
+\x 7, 9
+\x 7, 10
+\x 7, 11
+\x 7, 12
+\x 7, 13
+\x 7, 14
+\x 7, 15
+\x 8, 0
+\x 8, 1
+\x 8, 2
+\x 8, 3
+\x 8, 4
+\x 8, 5
+\x 8, 6
+\x 8, 7
+\x 8, 8
+\x 8, 9
+\x 8, 10
+\x 8, 11
+\x 8, 12
+\x 8, 13
+\x 8, 14
+\x 8, 15
+\x 9, 0
+\x 9, 1
+\x 9, 2
+\x 9, 3
+\x 9, 4
+\x 9, 5
+\x 9, 6
+\x 9, 7
+\x 9, 8
+\x 9, 9
+\x 9, 10
+\x 9, 11
+\x 9, 12
+\x 9, 13
+\x 9, 14
+\x 9, 15
+\x 10, 0
+\x 10, 1
+\x 10, 2
+\x 10, 3
+\x 10, 4
+\x 10, 5
+\x 10, 6
+\x 10, 7
+\x 10, 8
+\x 10, 9
+\x 10, 10
+\x 10, 11
+\x 10, 12
+\x 10, 13
+\x 10, 14
+\x 10, 15
+\x 11, 0
+\x 11, 1
+\x 11, 2
+\x 11, 3
+\x 11, 4
+\x 11, 5
+\x 11, 6
+\x 11, 7
+\x 11, 8
+\x 11, 9
+\x 11, 10
+\x 11, 11
+\x 11, 12
+\x 11, 13
+\x 11, 14
+\x 11, 15
+\x 12, 0
+\x 12, 1
+\x 12, 2
+\x 12, 3
+\x 12, 4
+\x 12, 5
+\x 12, 6
+\x 12, 7
+\x 12, 8
+\x 12, 9
+\x 12, 10
+\x 12, 11
+\x 12, 12
+\x 12, 13
+\x 12, 14
+\x 12, 15
+\x 13, 0
+\x 13, 1
+\x 13, 2
+\x 13, 3
+\x 13, 4
+\x 13, 5
+\x 13, 6
+\x 13, 7
+\x 13, 8
+\x 13, 9
+\x 13, 10
+\x 13, 11
+\x 13, 12
+\x 13, 13
+\x 13, 14
+\x 13, 15
+\x 14, 0
+\x 14, 1
+\x 14, 2
+\x 14, 3
+\x 14, 4
+\x 14, 5
+\x 14, 6
+\x 14, 7
+\x 14, 8
+\x 14, 9
+\x 14, 10
+\x 14, 11
+\x 14, 12
+\x 14, 13
+\x 14, 14
+\x 14, 15
+\x 15, 0
+\x 15, 1
+\x 15, 2
+\x 15, 3
+\x 15, 4
+\x 15, 5
+\x 15, 6
+\x 15, 7
+\x 15, 8
+\x 15, 9
+\x 15, 10
+\x 15, 11
+\x 15, 12
+\x 15, 13
+\x 15, 14
+\x 15, 15
+.endm
+
+#else
+#define FOR_ALL_XMM_PAIRS() \
+  XMM_PAIR(0, 0)            \
+  XMM_PAIR(0, 1)            \
+  XMM_PAIR(0, 2)            \
+  XMM_PAIR(0, 3)            \
+  XMM_PAIR(0, 4)            \
+  XMM_PAIR(0, 5)            \
+  XMM_PAIR(0, 6)            \
+  XMM_PAIR(0, 7)            \
+  XMM_PAIR(0, 8)            \
+  XMM_PAIR(0, 9)            \
+  XMM_PAIR(0, 10)           \
+  XMM_PAIR(0, 11)           \
+  XMM_PAIR(0, 12)           \
+  XMM_PAIR(0, 13)           \
+  XMM_PAIR(0, 14)           \
+  XMM_PAIR(0, 15)           \
+  XMM_PAIR(1, 0)            \
+  XMM_PAIR(1, 1)            \
+  XMM_PAIR(1, 2)            \
+  XMM_PAIR(1, 3)            \
+  XMM_PAIR(1, 4)            \
+  XMM_PAIR(1, 5)            \
+  XMM_PAIR(1, 6)            \
+  XMM_PAIR(1, 7)            \
+  XMM_PAIR(1, 8)            \
+  XMM_PAIR(1, 9)            \
+  XMM_PAIR(1, 10)           \
+  XMM_PAIR(1, 11)           \
+  XMM_PAIR(1, 12)           \
+  XMM_PAIR(1, 13)           \
+  XMM_PAIR(1, 14)           \
+  XMM_PAIR(1, 15)           \
+  XMM_PAIR(2, 0)            \
+  XMM_PAIR(2, 1)            \
+  XMM_PAIR(2, 2)            \
+  XMM_PAIR(2, 3)            \
+  XMM_PAIR(2, 4)            \
+  XMM_PAIR(2, 5)            \
+  XMM_PAIR(2, 6)            \
+  XMM_PAIR(2, 7)            \
+  XMM_PAIR(2, 8)            \
+  XMM_PAIR(2, 9)            \
+  XMM_PAIR(2, 10)           \
+  XMM_PAIR(2, 11)           \
+  XMM_PAIR(2, 12)           \
+  XMM_PAIR(2, 13)           \
+  XMM_PAIR(2, 14)           \
+  XMM_PAIR(2, 15)           \
+  XMM_PAIR(3, 0)            \
+  XMM_PAIR(3, 1)            \
+  XMM_PAIR(3, 2)            \
+  XMM_PAIR(3, 3)            \
+  XMM_PAIR(3, 4)            \
+  XMM_PAIR(3, 5)            \
+  XMM_PAIR(3, 6)            \
+  XMM_PAIR(3, 7)            \
+  XMM_PAIR(3, 8)            \
+  XMM_PAIR(3, 9)            \
+  XMM_PAIR(3, 10)           \
+  XMM_PAIR(3, 11)           \
+  XMM_PAIR(3, 12)           \
+  XMM_PAIR(3, 13)           \
+  XMM_PAIR(3, 14)           \
+  XMM_PAIR(3, 15)           \
+  XMM_PAIR(4, 0)            \
+  XMM_PAIR(4, 1)            \
+  XMM_PAIR(4, 2)            \
+  XMM_PAIR(4, 3)            \
+  XMM_PAIR(4, 4)            \
+  XMM_PAIR(4, 5)            \
+  XMM_PAIR(4, 6)            \
+  XMM_PAIR(4, 7)            \
+  XMM_PAIR(4, 8)            \
+  XMM_PAIR(4, 9)            \
+  XMM_PAIR(4, 10)           \
+  XMM_PAIR(4, 11)           \
+  XMM_PAIR(4, 12)           \
+  XMM_PAIR(4, 13)           \
+  XMM_PAIR(4, 14)           \
+  XMM_PAIR(4, 15)           \
+  XMM_PAIR(5, 0)            \
+  XMM_PAIR(5, 1)            \
+  XMM_PAIR(5, 2)            \
+  XMM_PAIR(5, 3)            \
+  XMM_PAIR(5, 4)            \
+  XMM_PAIR(5, 5)            \
+  XMM_PAIR(5, 6)            \
+  XMM_PAIR(5, 7)            \
+  XMM_PAIR(5, 8)            \
+  XMM_PAIR(5, 9)            \
+  XMM_PAIR(5, 10)           \
+  XMM_PAIR(5, 11)           \
+  XMM_PAIR(5, 12)           \
+  XMM_PAIR(5, 13)           \
+  XMM_PAIR(5, 14)           \
+  XMM_PAIR(5, 15)           \
+  XMM_PAIR(6, 0)            \
+  XMM_PAIR(6, 1)            \
+  XMM_PAIR(6, 2)            \
+  XMM_PAIR(6, 3)            \
+  XMM_PAIR(6, 4)            \
+  XMM_PAIR(6, 5)            \
+  XMM_PAIR(6, 6)            \
+  XMM_PAIR(6, 7)            \
+  XMM_PAIR(6, 8)            \
+  XMM_PAIR(6, 9)            \
+  XMM_PAIR(6, 10)           \
+  XMM_PAIR(6, 11)           \
+  XMM_PAIR(6, 12)           \
+  XMM_PAIR(6, 13)           \
+  XMM_PAIR(6, 14)           \
+  XMM_PAIR(6, 15)           \
+  XMM_PAIR(7, 0)            \
+  XMM_PAIR(7, 1)            \
+  XMM_PAIR(7, 2)            \
+  XMM_PAIR(7, 3)            \
+  XMM_PAIR(7, 4)            \
+  XMM_PAIR(7, 5)            \
+  XMM_PAIR(7, 6)            \
+  XMM_PAIR(7, 7)            \
+  XMM_PAIR(7, 8)            \
+  XMM_PAIR(7, 9)            \
+  XMM_PAIR(7, 10)           \
+  XMM_PAIR(7, 11)           \
+  XMM_PAIR(7, 12)           \
+  XMM_PAIR(7, 13)           \
+  XMM_PAIR(7, 14)           \
+  XMM_PAIR(7, 15)           \
+  XMM_PAIR(8, 0)            \
+  XMM_PAIR(8, 1)            \
+  XMM_PAIR(8, 2)            \
+  XMM_PAIR(8, 3)            \
+  XMM_PAIR(8, 4)            \
+  XMM_PAIR(8, 5)            \
+  XMM_PAIR(8, 6)            \
+  XMM_PAIR(8, 7)            \
+  XMM_PAIR(8, 8)            \
+  XMM_PAIR(8, 9)            \
+  XMM_PAIR(8, 10)           \
+  XMM_PAIR(8, 11)           \
+  XMM_PAIR(8, 12)           \
+  XMM_PAIR(8, 13)           \
+  XMM_PAIR(8, 14)           \
+  XMM_PAIR(8, 15)           \
+  XMM_PAIR(9, 0)            \
+  XMM_PAIR(9, 1)            \
+  XMM_PAIR(9, 2)            \
+  XMM_PAIR(9, 3)            \
+  XMM_PAIR(9, 4)            \
+  XMM_PAIR(9, 5)            \
+  XMM_PAIR(9, 6)            \
+  XMM_PAIR(9, 7)            \
+  XMM_PAIR(9, 8)            \
+  XMM_PAIR(9, 9)            \
+  XMM_PAIR(9, 10)           \
+  XMM_PAIR(9, 11)           \
+  XMM_PAIR(9, 12)           \
+  XMM_PAIR(9, 13)           \
+  XMM_PAIR(9, 14)           \
+  XMM_PAIR(9, 15)           \
+  XMM_PAIR(10, 0)           \
+  XMM_PAIR(10, 1)           \
+  XMM_PAIR(10, 2)           \
+  XMM_PAIR(10, 3)           \
+  XMM_PAIR(10, 4)           \
+  XMM_PAIR(10, 5)           \
+  XMM_PAIR(10, 6)           \
+  XMM_PAIR(10, 7)           \
+  XMM_PAIR(10, 8)           \
+  XMM_PAIR(10, 9)           \
+  XMM_PAIR(10, 10)          \
+  XMM_PAIR(10, 11)          \
+  XMM_PAIR(10, 12)          \
+  XMM_PAIR(10, 13)          \
+  XMM_PAIR(10, 14)          \
+  XMM_PAIR(10, 15)          \
+  XMM_PAIR(11, 0)           \
+  XMM_PAIR(11, 1)           \
+  XMM_PAIR(11, 2)           \
+  XMM_PAIR(11, 3)           \
+  XMM_PAIR(11, 4)           \
+  XMM_PAIR(11, 5)           \
+  XMM_PAIR(11, 6)           \
+  XMM_PAIR(11, 7)           \
+  XMM_PAIR(11, 8)           \
+  XMM_PAIR(11, 9)           \
+  XMM_PAIR(11, 10)          \
+  XMM_PAIR(11, 11)          \
+  XMM_PAIR(11, 12)          \
+  XMM_PAIR(11, 13)          \
+  XMM_PAIR(11, 14)          \
+  XMM_PAIR(11, 15)          \
+  XMM_PAIR(12, 0)           \
+  XMM_PAIR(12, 1)           \
+  XMM_PAIR(12, 2)           \
+  XMM_PAIR(12, 3)           \
+  XMM_PAIR(12, 4)           \
+  XMM_PAIR(12, 5)           \
+  XMM_PAIR(12, 6)           \
+  XMM_PAIR(12, 7)           \
+  XMM_PAIR(12, 8)           \
+  XMM_PAIR(12, 9)           \
+  XMM_PAIR(12, 10)          \
+  XMM_PAIR(12, 11)          \
+  XMM_PAIR(12, 12)          \
+  XMM_PAIR(12, 13)          \
+  XMM_PAIR(12, 14)          \
+  XMM_PAIR(12, 15)          \
+  XMM_PAIR(13, 0)           \
+  XMM_PAIR(13, 1)           \
+  XMM_PAIR(13, 2)           \
+  XMM_PAIR(13, 3)           \
+  XMM_PAIR(13, 4)           \
+  XMM_PAIR(13, 5)           \
+  XMM_PAIR(13, 6)           \
+  XMM_PAIR(13, 7)           \
+  XMM_PAIR(13, 8)           \
+  XMM_PAIR(13, 9)           \
+  XMM_PAIR(13, 10)          \
+  XMM_PAIR(13, 11)          \
+  XMM_PAIR(13, 12)          \
+  XMM_PAIR(13, 13)          \
+  XMM_PAIR(13, 14)          \
+  XMM_PAIR(13, 15)          \
+  XMM_PAIR(14, 0)           \
+  XMM_PAIR(14, 1)           \
+  XMM_PAIR(14, 2)           \
+  XMM_PAIR(14, 3)           \
+  XMM_PAIR(14, 4)           \
+  XMM_PAIR(14, 5)           \
+  XMM_PAIR(14, 6)           \
+  XMM_PAIR(14, 7)           \
+  XMM_PAIR(14, 8)           \
+  XMM_PAIR(14, 9)           \
+  XMM_PAIR(14, 10)          \
+  XMM_PAIR(14, 11)          \
+  XMM_PAIR(14, 12)          \
+  XMM_PAIR(14, 13)          \
+  XMM_PAIR(14, 14)          \
+  XMM_PAIR(14, 15)          \
+  XMM_PAIR(15, 0)           \
+  XMM_PAIR(15, 1)           \
+  XMM_PAIR(15, 2)           \
+  XMM_PAIR(15, 3)           \
+  XMM_PAIR(15, 4)           \
+  XMM_PAIR(15, 5)           \
+  XMM_PAIR(15, 6)           \
+  XMM_PAIR(15, 7)           \
+  XMM_PAIR(15, 8)           \
+  XMM_PAIR(15, 9)           \
+  XMM_PAIR(15, 10)          \
+  XMM_PAIR(15, 11)          \
+  XMM_PAIR(15, 12)          \
+  XMM_PAIR(15, 13)          \
+  XMM_PAIR(15, 14)          \
+  XMM_PAIR(15, 15)
+#endif
+#endif

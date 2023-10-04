@@ -3,6 +3,7 @@ project('determinze', ['c', 'cpp'])
 add_project_arguments(
   '-Wall',
   '-Wextra',
+  '-Wno-unused-parameter',
   '-std=c++20',
   language: 'cpp',
 )
@@ -36,6 +37,7 @@ determinize_lib = static_library(
   include_directories: ['include'],
   sources: [
     'src/determinize.cpp',
+    'src/replacements.cpp',
     'src/thunk.cpp',
   ],
 )
@@ -50,7 +52,13 @@ determinize_test = executable(
   dependencies: [determinize, catch2, zydis],
   sources: [
     'test/catch.cpp',
-    'test/test.cpp',
-    'test/test.s',
+    'test/rcpps/test.cpp',
+    'test/rcpps/test.S',
+    'test/rsqrtps/test.cpp',
+    'test/rsqrtps/test.S',
+    'test/rsqrtss/test.cpp',
+    'test/rsqrtss/test.S',
+    'test/smoke/test.cpp',
+    'test/smoke/test.s',
   ],
 )

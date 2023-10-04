@@ -1,4 +1,4 @@
-#include "determinize.h"
+#include <determinize/thunk.h>
 
 #include <stdio.h>
 
