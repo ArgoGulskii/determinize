@@ -10,6 +10,11 @@ static void* PageAlign(void* p) {
   return reinterpret_cast<void*>(value & ~4095UL);
 }
 
+static void* NextPage(void* p) {
+  uintptr_t value = reinterpret_cast<uintptr_t>(PageAlign(p));
+  return reinterpret_cast<void*>(value + 4096);
+}
+
 static size_t PointerRange(void* p, void* q) {
   auto x = reinterpret_cast<intptr_t>(p);
   auto y = reinterpret_cast<intptr_t>(q);

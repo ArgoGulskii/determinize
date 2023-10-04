@@ -71,8 +71,9 @@ bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begi
 }
 
 bool Replace(void* replacement, void* target, size_t target_length) {
-  // TODO: Handle the case where the overwritten instructions cross a page boundary.
   if (!Unprotect(target)) return false;
+  void* next_page = NextPage(target);
+  if (!Unprotect(next_page)) return false;
 
   // TODO: Allocate less stupidly.
   void* thunk = MapRandomPage();
