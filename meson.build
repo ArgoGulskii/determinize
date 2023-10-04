@@ -36,6 +36,7 @@ determinize_lib = static_library(
   include_directories: ['include'],
   sources: [
     'src/determinize.cpp',
+    'src/thunk.cpp',
   ],
 )
 
@@ -46,7 +47,7 @@ determinize = declare_dependency(
 
 determinize_test = executable(
   'determinize_test',
-  dependencies: [determinize, catch2],
+  dependencies: [determinize, catch2, zydis],
   sources: [
     'test/catch.cpp',
     'test/test.cpp',

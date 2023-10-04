@@ -8,6 +8,7 @@
 
 #include <map>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 #include <Zydis.h>
@@ -29,7 +30,9 @@ size_t Append(std::vector<char>& vec, T value) {
   return size;
 }
 
-bool GenerateThunk(void* thunk, void* jump_target, void* relocation_begin, size_t relocation_size) {
+bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begin,
+                   size_t relocation_size) {
+  Thunk thunk;
   char* p = static_cast<char*>(relocation_begin);
 
   // Emit the following thunk:
@@ -38,16 +41,11 @@ bool GenerateThunk(void* thunk, void* jump_target, void* relocation_begin, size_
   //   jmp *return_address
   //   .quad jump_target
   //   .quad return_address
-
-  char* thunk_cur = static_cast<char*>(thunk);
-  std::vector<char> data;
-
-  char* thunk_call = thunk_cur;
-  uint32_t thunk_call_data = Append<void*>(data, static_cast<void*>(jump_target));
-  thunk_cur += 6;
+  thunk.Call(jump_target);
 
   ZydisDisassembledInstruction instruction;
   ZyanUSize offset = 0;
+  printf("Relocated instructions:\n");
   while (offset < relocation_size) {
     char* current_instruction = p + offset;
     auto rc = ZydisDisassembleIntel(ZYDIS_MACHINE_MODE_LONG_64,
@@ -55,31 +53,19 @@ bool GenerateThunk(void* thunk, void* jump_target, void* relocation_begin, size_
                                     current_instruction, 4096, &instruction);
     if (!ZYAN_SUCCESS(rc)) return false;
 
-    printf("%p  %s\n", current_instruction, instruction.text);
+    printf("  0x%016lx  %s\n", reinterpret_cast<long>(current_instruction), instruction.text);
     offset += instruction.info.length;
-
-    // TODO: Actually relocate the instruction instead of blindly copying it.
-    memcpy(thunk_cur, current_instruction, instruction.info.length);
-    thunk_cur += instruction.info.length;
+    thunk.Relocate(&instruction);
   }
 
   void* return_address = p + offset;
-  char* thunk_return = thunk_cur;
-  uint32_t thunk_return_data = Append<void*>(data, static_cast<void*>(return_address));
-  thunk_cur += 6;
+  thunk.Jump(return_address);
 
-  char* thunk_data = thunk_cur;
-  memcpy(thunk_data, data.data(), data.size());
+  printf("Thunk:\n");
+  thunk.Dump("  ");
 
-  thunk_call[0] = 0xff;
-  thunk_call[1] = 0x15;
-  thunk_call_data += (thunk_data - thunk_call) - 6;
-  memcpy(&thunk_call[2], &thunk_call_data, sizeof(thunk_call_data));
-
-  thunk_return[0] = 0xff;
-  thunk_return[1] = 0x25;
-  thunk_return_data += (thunk_data - thunk_return) - 6;
-  memcpy(&thunk_return[2], &thunk_return_data, sizeof(thunk_return_data));
+  std::vector<char> thunk_data = thunk.Emit();
+  memcpy(thunk_address, thunk_data.data(), thunk_data.size());
 
   return true;
 }
