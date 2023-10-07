@@ -25,4 +25,18 @@ rsqrtss_deterministic_\dst\()_\src\()_impl:
 
 for_all_xmm_pairs rsqrtss_deterministic
 
+.global rsqrtss_memory_rdi
+rsqrtss_memory_rdi:
+  movaps xmm0, [rdi]
+  call rsqrtss_memory_rdi_impl
+  movaps [rdi], xmm0
+  ret
+
+.global rsqrtss_memory_rdi_impl
+rsqrtss_memory_rdi_impl:
+  rsqrtss xmm0, [rdi]
+  nop
+  nop
+  ret
+
 .section .note.GNU-stack, "", %progbits

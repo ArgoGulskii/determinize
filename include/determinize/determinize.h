@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <optional>
+#include <vector>
 
 namespace determinize {
 
@@ -28,5 +29,7 @@ static bool Replace(T (*replacement)(Args..., ...), T (*target)(Args..., ...),
   return Replace(reinterpret_cast<void*>(replacement), reinterpret_cast<void*>(target),
                  target_length);
 }
+
+bool Determinize(std::vector<void*> instruction_addresses);
 
 }  // namespace determinize

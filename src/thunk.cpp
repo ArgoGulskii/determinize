@@ -42,6 +42,8 @@ bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
           return false;
         }
 
+        if (mem.base != ZYDIS_REGISTER_RIP) continue;
+
         ZyanU64 data_address;
         if (!ZYAN_SUCCESS(ZydisCalcAbsoluteAddress(&insn->info, &operand, insn->runtime_address,
                                                    &data_address))) {

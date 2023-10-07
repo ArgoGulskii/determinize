@@ -24,4 +24,12 @@ rcpps_deterministic_\dst\()_\src\()_impl:
 
 for_all_xmm_pairs rcpps_deterministic
 
+.global rcpps_memory_rdi
+.global rcpps_memory_rdi_impl
+rcpps_memory_rdi:
+rcpps_memory_rdi_impl:
+  rcpps xmm0, [rdi]
+  movaps [rdi], xmm0
+  ret
+
 .section .note.GNU-stack, "", %progbits

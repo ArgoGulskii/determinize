@@ -2,10 +2,12 @@
 
 #include <Zydis.h>
 
+#include "thunk.h"
+
 namespace determinize {
 
-void* GetDeterministicRcpps(ZydisRegister dst, ZydisRegister src);
-void* GetDeterministicRsqrtps(ZydisRegister dst, ZydisRegister src);
-void* GetDeterministicRsqrtss(ZydisRegister dst, ZydisRegister src);
+bool GenerateRcpps(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src);
+bool GenerateRsqrtps(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src);
+bool GenerateRsqrtss(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src);
 
 }  // namespace determinize
