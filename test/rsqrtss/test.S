@@ -4,17 +4,17 @@
 
 .section .text
 
-.macro rsqrtss_deterministic dst, src
-.global rsqrtss_deterministic_\dst\()_\src
-rsqrtss_deterministic_\dst\()_\src\():
+.macro rsqrtss_register dst, src
+.global rsqrtss_register_\dst\()_\src
+rsqrtss_register_\dst\()_\src\():
   movaps xmm\dst, [rdi]
   movaps xmm\src, [rdi]
-  call rsqrtss_deterministic_\dst\()_\src\()_impl
+  call rsqrtss_register_\dst\()_\src\()_impl
   movaps [rdi], xmm\dst
   ret
 
-.global rsqrtss_deterministic_\dst\()_\src\()_impl
-rsqrtss_deterministic_\dst\()_\src\()_impl:
+.global rsqrtss_register_\dst\()_\src\()_impl
+rsqrtss_register_\dst\()_\src\()_impl:
   rsqrtss xmm\dst, xmm\src
   nop
   nop
@@ -23,7 +23,7 @@ rsqrtss_deterministic_\dst\()_\src\()_impl:
   ret
 .endm
 
-for_all_xmm_pairs rsqrtss_deterministic
+for_all_xmm_pairs rsqrtss_register
 
 .global rsqrtss_memory_rdi
 rsqrtss_memory_rdi:

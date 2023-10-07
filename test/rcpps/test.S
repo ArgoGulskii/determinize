@@ -4,16 +4,16 @@
 
 .section .text
 
-.macro rcpps_deterministic dst, src
-.global rcpps_deterministic_\dst\()_\src
-rcpps_deterministic_\dst\()_\src\():
+.macro rcpps_register dst, src
+.global rcpps_register_\dst\()_\src
+rcpps_register_\dst\()_\src\():
   movaps xmm\src, [rdi]
-  call rcpps_deterministic_\dst\()_\src\()_impl
+  call rcpps_register_\dst\()_\src\()_impl
   movaps [rdi], xmm\dst
   ret
 
-.global rcpps_deterministic_\dst\()_\src\()_impl
-rcpps_deterministic_\dst\()_\src\()_impl:
+.global rcpps_register_\dst\()_\src\()_impl
+rcpps_register_\dst\()_\src\()_impl:
   rcpps xmm\dst, xmm\src
   nop
   nop
@@ -22,7 +22,7 @@ rcpps_deterministic_\dst\()_\src\()_impl:
   ret
 .endm
 
-for_all_xmm_pairs rcpps_deterministic
+for_all_xmm_pairs rcpps_register
 
 .global rcpps_memory_rdi
 .global rcpps_memory_rdi_impl
