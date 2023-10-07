@@ -10,7 +10,7 @@
 
 using namespace Catch::Matchers;
 
-#define RSQRTPS_DETERMINISTIC_TEST(dst, src)                                            \
+#define RSQRTSS_DETERMINISTIC_TEST(dst, src)                                            \
   extern "C" uint64_t rsqrtss_deterministic_##dst##_##src(float* vec);                  \
   extern "C" uint64_t rsqrtss_deterministic_##dst##_##src##_impl(float* vec);           \
   TEST_CASE("rsqrtss_deterministic_unwrapped(xmm" #dst ", xmm" #src ")", "[rsqrtss]") { \
@@ -33,7 +33,7 @@ using namespace Catch::Matchers;
     CHECK_EXACT(vec[3], 69.0);                                                          \
   }
 
-#define XMM_PAIR(dst, src) RSQRTPS_DETERMINISTIC_TEST(dst, src)
+#define XMM_PAIR(dst, src) RSQRTSS_DETERMINISTIC_TEST(dst, src)
 FOR_ALL_XMM_PAIRS()
 #undef XMM_PAIR
 
