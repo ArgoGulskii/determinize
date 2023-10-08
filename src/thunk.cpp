@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include "util.h"
+
 namespace determinize {
 
 bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
@@ -9,9 +11,40 @@ bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
   ZydisEncoderDecodedInstructionToEncoderRequest(&insn->info, insn->operands,
                                                  insn->info.operand_count, &req);
 
-  // TODO: Check for jmp, call, etc.
   if (insn->info.meta.branch_type != ZYDIS_BRANCH_TYPE_NONE) {
-    fprintf(stderr, "can't handle branches yet\n");
+    auto& operand = insn->operands[0];
+    if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+      // Conditional branches are annoying because they only support a relative jump, and we don't
+      // know where we're going to be written so replace:
+      //
+      //   jcc offset
+      //
+      // with:
+      //   jcc 2
+      //   1:
+      //   jmp 3
+      //   2:
+      //   jmp [rip + absolute_target]
+      //   3:
+      //
+      // Unconditional branches are handled identically because I'm lazy, and the branch predictor
+      // should magically make it basically free.
+      ZyanU64 jump_target = insn->runtime_address + insn->info.length + operand.imm.value.s;
+      fprintf(stderr, "  0x%016zx  %s\n", insn->runtime_address, insn->text);
+      printf("jump target = 0x%016zx\n", jump_target);
+      req.
+#if 0
+        ZyanU64 data_address;
+        if (!ZYAN_SUCCESS(ZydisCalcAbsoluteAddress(&insn->info, &operand, insn->runtime_address,
+                                                   &data_address))) {
+          fprintf(stderr, "failed to calculate data address\n");
+          return false;
+        }
+#endif
+    } else {
+      fprintf(stderr, "unhandled branch type:\n");
+      fprintf(stderr, "  0x%016zx  %s\n", insn->runtime_address, insn->text);
+    }
     return false;
   }
 
