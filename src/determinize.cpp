@@ -15,6 +15,7 @@
 #include <determinize/replacements.h>
 #include <determinize/thunk.h>
 
+#include "log.h"
 #include "trampoline.h"
 #include "util.h"
 
@@ -55,7 +56,7 @@ bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begi
 
   ZydisDisassembledInstruction instruction;
   ZyanUSize offset = 0;
-  printf("Relocated instructions:\n");
+  debug("Relocated instructions:\n");
   while (offset < relocation_size) {
     char* current_instruction = p + offset;
     auto rc = ZydisDisassembleIntel(ZYDIS_MACHINE_MODE_LONG_64,
@@ -63,8 +64,7 @@ bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begi
                                     current_instruction, 4096, &instruction);
     if (!ZYAN_SUCCESS(rc)) return false;
 
-    printf("  0x%016zx  %s\n", reinterpret_cast<int64_t>(current_instruction),
-           instruction.text);
+    debug("  0x%016zx  %s\n", reinterpret_cast<int64_t>(current_instruction), instruction.text);
     offset += instruction.info.length;
     if (!thunk.Relocate(&instruction)) {
       return false;
@@ -74,8 +74,10 @@ bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begi
   void* return_address = p + offset;
   thunk.Jump(return_address);
 
-  printf("Thunk:\n");
+#if defined(DEBUG_LOG)
+  debug("Thunk:\n");
   thunk.Dump("  ");
+#endif
 
   std::vector<char> thunk_data = thunk.Emit();
   memcpy(thunk_address, thunk_data.data(), thunk_data.size());
@@ -123,9 +125,6 @@ bool Replace(void* replacement, void* target, size_t target_length) {
   }
 
   trampoline->Write(thunk);
-
-  printf("trampoline: %p\n", trampoline->Address());
-  printf("thunk: %p\n", thunk);
   memcpy(target, call_instructions.data(), call_instructions.size());
 
   return true;
@@ -197,69 +196,93 @@ bool Determinize(std::vector<void*> instruction_addresses) {
   }
   std::sort(addrs.begin(), addrs.end());
 
+  bool result = true;
+
   auto it = addrs.begin();
   while (it != addrs.end()) {
-    char* target = reinterpret_cast<char*>(*it);
-    std::optional<Trampoline> trampoline =
-        g_trampoline_allocator.AllocateTrampoline(target, INT32_MAX);
+    {
+      char* target = reinterpret_cast<char*>(*it);
+      std::optional<Trampoline> trampoline =
+          g_trampoline_allocator.AllocateTrampoline(target, INT32_MAX);
 
-    size_t jump_length = trampoline ? 5 : 14;
+      size_t jump_length = trampoline ? 5 : 14;
 
-    ZyanUSize offset = 0;
-    Thunk thunk;
-    while (offset <= jump_length) {
-      std::optional<size_t> length = Determinize(&thunk, target + offset);
-      if (!length) return false;
-      offset += *length;
+      ZyanUSize offset = 0;
+      Thunk thunk;
+      while (offset <= jump_length) {
+        std::optional<size_t> length = Determinize(&thunk, target + offset);
+        if (!length) {
+          result = false;
+          goto next;
+        }
+        offset += *length;
+      }
+
+      // We might be overwriting an instruction that we're supposed to fix up.
+      while (it != addrs.end() && *it < target + offset) ++it;
+
+      // Keep going past the end until we hit an instruction we're not patching.
+      while (it != addrs.end() && *it == target + offset) {
+        std::optional<size_t> length = Determinize(&thunk, target + offset);
+        if (!length) {
+          result = false;
+          goto next;
+        }
+        offset += *length;
+        ++it;
+      }
+
+      // Jump back to the following instruction.
+      thunk.Jump(target + offset);
+
+      if (!Unprotect(target)) {
+        result = false;
+        goto next;
+      }
+
+      void* next_page = NextPage(target);
+      if (!Unprotect(next_page)) {
+        result = false;
+        goto next;
+      }
+
+#if defined(DEBUG_LOG)
+      debug("Thunk:\n");
+      thunk.Dump("  ");
+#endif
+
+      std::vector<char> thunk_data = thunk.Emit();
+      void* thunk_address = MapRandomPage();
+      memcpy(thunk_address, thunk_data.data(), thunk_data.size());
+
+      trampoline->Write(thunk_address);
+
+      auto trampoline_address = reinterpret_cast<intptr_t>(trampoline->Address());
+      if (trampoline) {
+        target[0] = 0xE9;
+        int32_t trampoline_offset =
+            static_cast<int32_t>(trampoline_address - reinterpret_cast<intptr_t>(target) - 5);
+        memcpy(&target[1], &trampoline_offset, sizeof(trampoline_offset));
+      } else {
+        // jmp *0x0(%rip)
+        // .quad <thunk>
+        target[0] = 0xFF;
+        target[1] = 0x25;
+        target[2] = 0x00;
+        target[3] = 0x00;
+        target[4] = 0x00;
+        target[5] = 0x00;
+        memcpy(&target[6], &trampoline_address, sizeof(trampoline_address));
+      }
     }
-
-    // We might be overwriting an instruction that we're supposed to fix up.
-    while (it != addrs.end() && *it < target + offset) ++it;
-
-    // Keep going past the end until we hit an instruction we're not patching.
-    while (it != addrs.end() && *it == target + offset) {
-      std::optional<size_t> length = Determinize(&thunk, target + offset);
-      if (!length) return false;
-      offset += *length;
-      ++it;
-    }
-
-    // Jump back to the following instruction.
-    thunk.Jump(target + offset);
-
-    if (!Unprotect(target)) return false;
-    void* next_page = NextPage(target);
-    if (!Unprotect(next_page)) return false;
-
-    printf("Thunk:\n");
-    thunk.Dump("  ");
-
-    std::vector<char> thunk_data = thunk.Emit();
-    void* thunk_address = MapRandomPage();
-    memcpy(thunk_address, thunk_data.data(), thunk_data.size());
-
-    trampoline->Write(thunk_address);
-
-    auto trampoline_address = reinterpret_cast<intptr_t>(trampoline->Address());
-    if (trampoline) {
-      target[0] = 0xE9;
-      int32_t trampoline_offset =
-          static_cast<int32_t>(trampoline_address - reinterpret_cast<intptr_t>(target) - 5);
-      memcpy(&target[1], &trampoline_offset, sizeof(trampoline_offset));
-    } else {
-      // jmp *0x0(%rip)
-      // .quad <thunk>
-      target[0] = 0xFF;
-      target[1] = 0x25;
-      target[2] = 0x00;
-      target[3] = 0x00;
-      target[4] = 0x00;
-      target[5] = 0x00;
-      memcpy(&target[6], &trampoline_address, sizeof(trampoline_address));
-    }
+    continue;
+next:
+    fprintf(stderr, "Failed to patch instruction at 0x%016zx\n", *it);
+    ++it;
+    continue;
   }
 
-  return true;
+  return result;
 }
 
 }  // namespace determinize
