@@ -215,7 +215,7 @@ bool Determinize(std::vector<void*> instruction_addresses) {
     }
 
     // We might be overwriting an instruction that we're supposed to fix up.
-    while (it != addrs.end() && *it <= target + offset) ++it;
+    while (it != addrs.end() && *it < target + offset) ++it;
 
     // Keep going past the end until we hit an instruction we're not patching.
     while (it != addrs.end() && *it == target + offset) {
