@@ -8,6 +8,7 @@
 
 #include <determinize/thunk.h>
 
+#include "log.h"
 #include "trampoline.h"
 #include "util.h"
 
@@ -28,30 +29,6 @@ static ZydisRegister XmmScratch(ZydisRegister dst, ZydisDecodedOperand src) {
   }
 }
 
-static std::string FormatOperand(ZydisDecodedOperand operand) {
-  if (operand.type == ZYDIS_OPERAND_TYPE_REGISTER) {
-    return ZydisRegisterGetString(operand.reg.value);
-  } else if (operand.type == ZYDIS_OPERAND_TYPE_MEMORY) {
-    auto& mem = operand.mem;
-    std::string result = "[";
-    result += ZydisRegisterGetString(mem.base);
-    if (mem.index != ZYDIS_REGISTER_NONE) {
-      result += " + ";
-      result += ZydisRegisterGetString(mem.index);
-      if (mem.scale != 1) {
-        result += " * ";
-        result += std::to_string(mem.scale);
-      }
-    }
-    if (mem.disp.has_displacement) {
-      result += " + ";
-      result += std::to_string(mem.disp.value);
-    }
-    result += "]";
-    return result;
-  }
-  return "<unhandled operand type>";
-}
 
 static ZydisEncoderOperand TranslateOperand(ZydisDecodedOperand dec, uint16_t operand_size,
                                             int stack_offset) {
@@ -89,8 +66,8 @@ template <typename Fn>
 static bool GenerateXmmReplacement(Thunk* thunk, const char* name, ZydisRegister dst,
                                    ZydisDecodedOperand src, Fn fn) {
   ZydisRegister scratch = XmmScratch(dst, src);
-  printf("%s(%s, %s): # scratch = %s\n", name, ZydisRegisterGetString(dst),
-         FormatOperand(src).c_str(), ZydisRegisterGetString(scratch));
+  debug("%s(%s, %s): # scratch = %s\n", name, ZydisRegisterGetString(dst),
+        FormatOperand(src).c_str(), ZydisRegisterGetString(scratch));
 
   thunk->Append(ZYDIS_MNEMONIC_SUB, Register(ZYDIS_REGISTER_RSP), Immediate(16));
   thunk->Append(ZYDIS_MNEMONIC_MOVUPS, Memory(ZYDIS_REGISTER_RSP, 0, 16), Register(scratch));
@@ -103,7 +80,10 @@ static bool GenerateXmmReplacement(Thunk* thunk, const char* name, ZydisRegister
 
   thunk->Append(ZYDIS_MNEMONIC_MOVUPS, Register(scratch), Memory(ZYDIS_REGISTER_RSP, 0, 16));
   thunk->Append(ZYDIS_MNEMONIC_ADD, Register(ZYDIS_REGISTER_RSP), Immediate(16));
+
+#if defined(LOG)
   thunk->Dump("  ");
+#endif
 
   return true;
 }

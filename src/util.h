@@ -3,6 +3,10 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include <string>
+
+#include <Zydis.h>
+
 static void* PageAlign(void* p) {
   uintptr_t value = reinterpret_cast<uintptr_t>(p);
   return reinterpret_cast<void*>(value & ~4095ULL);
@@ -73,3 +77,28 @@ static bool Unprotect(void* p) {
 }
 
 #endif
+
+static std::string FormatOperand(ZydisDecodedOperand operand) {
+  if (operand.type == ZYDIS_OPERAND_TYPE_REGISTER) {
+    return ZydisRegisterGetString(operand.reg.value);
+  } else if (operand.type == ZYDIS_OPERAND_TYPE_MEMORY) {
+    auto& mem = operand.mem;
+    std::string result = "[";
+    result += ZydisRegisterGetString(mem.base);
+    if (mem.index != ZYDIS_REGISTER_NONE) {
+      result += " + ";
+      result += ZydisRegisterGetString(mem.index);
+      if (mem.scale != 1) {
+        result += " * ";
+        result += std::to_string(mem.scale);
+      }
+    }
+    if (mem.disp.has_displacement) {
+      result += " + ";
+      result += std::to_string(mem.disp.value);
+    }
+    result += "]";
+    return result;
+  }
+  return "<unhandled operand type>";
+}
