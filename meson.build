@@ -52,6 +52,8 @@ determinize_test = executable(
   dependencies: [determinize, catch2, zydis],
   sources: [
     'test/catch.cpp',
+    'test/branch/test.cpp',
+    'test/branch/test.S',
     'test/integration/test.cpp',
     'test/integration/test.S',
     'test/rcpps/test.cpp',

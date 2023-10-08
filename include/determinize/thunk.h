@@ -37,6 +37,11 @@ struct Memory {
 
 struct RelocatedData {
   explicit RelocatedData(std::vector<char> buf) : data(std::move(buf)) {}
+  RelocatedData(void* p, size_t len) {
+    data.resize(len);
+    memcpy(data.data(), p, len);
+  }
+
   std::vector<char> data;
 };
 

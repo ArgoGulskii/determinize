@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include "util.h"
+
 namespace determinize {
 
 bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
@@ -9,15 +11,54 @@ bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
   ZydisEncoderDecodedInstructionToEncoderRequest(&insn->info, insn->operands,
                                                  insn->info.operand_count, &req);
 
-  // TODO: Check for jmp, call, etc.
   if (insn->info.meta.branch_type != ZYDIS_BRANCH_TYPE_NONE) {
-    fprintf(stderr, "can't handle branches yet\n");
+    // Conditional branches are annoying because they only support a relative jump, and we don't
+    // know where we're going to be written so replace:
+    //
+    //   jcc offset
+    //
+    // with:
+    //   jcc 2
+    //   1:
+    //   jmp 3
+    //   2:
+    //   jmp [rip + absolute_target]
+    //   3:
+    //
+    // Unconditional branches are handled identically because I'm lazy, and the branch predictor
+    // should magically make it basically free.
+    //
+    // Additionally, we need to handle the case where we're jumping into patched instructions.
+    // Do this as a fixup during Emit.
+    if (insn->info.operand_count_visible != 1) {
+      for (int i = 0; i < insn->info.operand_count_visible; ++i) {
+        fprintf(stderr, "operand %d = %s\n", i, FormatOperand(insn->operands[i]).c_str());
+      }
+
+      fprintf(stderr, "unexpected operand count %d\n", insn->info.operand_count);
+      fprintf(stderr, "  0x%016zx  %s\n", insn->runtime_address, insn->text);
+      return false;
+    }
+
+    auto& operand = insn->operands[0];
+    if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+      ZyanU64 jump_target = insn->runtime_address + insn->info.length + operand.imm.value.s;
+      fprintf(stderr, "  0x%016zx  %s\n", insn->runtime_address, insn->text);
+      printf("jump target = 0x%016zx\n", jump_target);
+      Append(insn->info.mnemonic, Immediate(2));
+      Append(ZYDIS_MNEMONIC_JMP, Immediate(6));
+      Append(ZYDIS_MNEMONIC_JMP, RelocatedData(&jump_target, sizeof(jump_target)));
+      return true;
+    } else {
+      fprintf(stderr, "unhandled branch operand type: %d\n", operand.type);
+      fprintf(stderr, "  0x%016zx  %s\n", insn->runtime_address, insn->text);
+    }
     return false;
   }
 
   // We need to fixup instructions that reference the instruction pointer, since we're executing
   // at a different address.
-  for (size_t i = 0; i < insn->info.operand_count; ++i) {
+  for (size_t i = 0; i < insn->info.operand_count_visible; ++i) {
     const auto& operand = insn->operands[i];
     switch (operand.type) {
       case ZYDIS_OPERAND_TYPE_REGISTER:
