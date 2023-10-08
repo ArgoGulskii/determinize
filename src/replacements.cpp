@@ -53,7 +53,8 @@ static std::string FormatOperand(ZydisDecodedOperand operand) {
   return "<unhandled operand type>";
 }
 
-static ZydisEncoderOperand TranslateOperand(ZydisDecodedOperand dec, size_t operand_size) {
+static ZydisEncoderOperand TranslateOperand(ZydisDecodedOperand dec, uint16_t operand_size,
+                                            int stack_offset) {
   ZydisEncoderOperand operand = {};
   operand.type = dec.type;
 
@@ -72,6 +73,9 @@ static ZydisEncoderOperand TranslateOperand(ZydisDecodedOperand dec, size_t oper
           .displacement = dec.mem.disp.has_displacement ? dec.mem.disp.value : 0,
           .size = operand_size,
       };
+      if (operand.mem.base == ZYDIS_REGISTER_RSP) {
+        operand.mem.displacement += stack_offset;
+      }
       break;
 
     default:
@@ -91,7 +95,9 @@ static bool GenerateXmmReplacement(Thunk* thunk, const char* name, ZydisRegister
   thunk->Append(ZYDIS_MNEMONIC_SUB, Register(ZYDIS_REGISTER_RSP), Immediate(16));
   thunk->Append(ZYDIS_MNEMONIC_MOVUPS, Memory(ZYDIS_REGISTER_RSP, 0, 16), Register(scratch));
 
-  if (!fn(thunk, dst, src, scratch)) {
+  int stack_offset = 16;
+
+  if (!fn(thunk, dst, src, scratch, stack_offset)) {
     return false;
   }
 
@@ -105,12 +111,13 @@ static bool GenerateXmmReplacement(Thunk* thunk, const char* name, ZydisRegister
 bool GenerateRcpps(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src) {
   return GenerateXmmReplacement(
       thunk, "rcpps", dst, src,
-      [](Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src, ZydisRegister scratch) {
+      [](Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src, ZydisRegister scratch,
+         int stack_offset) {
         float ones[4] = {1.0, 1.0, 1.0, 1.0};
         std::vector<char> ones_data;
         ones_data.resize(sizeof(ones));
         memcpy(ones_data.data(), &ones, sizeof(ones));
-        thunk->Append(ZYDIS_MNEMONIC_MOVAPS, Register(scratch), TranslateOperand(src, 16));
+        thunk->Append(ZYDIS_MNEMONIC_MOVAPS, Register(scratch), TranslateOperand(src, 16, stack_offset));
         thunk->Append(ZYDIS_MNEMONIC_MOVAPS, Register(dst), RelocatedData(std::move(ones_data)));
         thunk->Append(ZYDIS_MNEMONIC_DIVPS, Register(dst), Register(scratch));
         return true;
@@ -120,12 +127,13 @@ bool GenerateRcpps(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src) {
 bool GenerateRsqrtps(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src) {
   return GenerateXmmReplacement(
       thunk, "rsqrtps", dst, src,
-      [](Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src, ZydisRegister scratch) {
+      [](Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src, ZydisRegister scratch,
+         int stack_offset) {
         float ones[4] = {1.0, 1.0, 1.0, 1.0};
         std::vector<char> ones_data;
         ones_data.resize(sizeof(ones));
         memcpy(ones_data.data(), &ones, sizeof(ones));
-        thunk->Append(ZYDIS_MNEMONIC_SQRTPS, Register(scratch), TranslateOperand(src, 16));
+        thunk->Append(ZYDIS_MNEMONIC_SQRTPS, Register(scratch), TranslateOperand(src, 16, stack_offset));
         thunk->Append(ZYDIS_MNEMONIC_MOVAPS, Register(dst), RelocatedData(std::move(ones_data)));
         thunk->Append(ZYDIS_MNEMONIC_DIVPS, Register(dst), Register(scratch));
         return true;
@@ -135,14 +143,16 @@ bool GenerateRsqrtps(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src) {
 bool GenerateRsqrtss(Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src) {
   return GenerateXmmReplacement(
       thunk, "rsqrtss", dst, src,
-      [](Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src, ZydisRegister scratch) {
+      [](Thunk* thunk, ZydisRegister dst, ZydisDecodedOperand src, ZydisRegister scratch,
+         int stack_offset) {
         double one = 1.0;
         std::vector<char> one_data;
         one_data.resize(sizeof(one));
         memcpy(one_data.data(), &one, sizeof(one));
 
         thunk->Append(ZYDIS_MNEMONIC_MOVAPS, Register(scratch), Register(dst));
-        thunk->Append(ZYDIS_MNEMONIC_SQRTSS, Register(scratch), TranslateOperand(src, 4));
+        thunk->Append(ZYDIS_MNEMONIC_SQRTSS, Register(scratch),
+                      TranslateOperand(src, 4, stack_offset));
         thunk->Append(ZYDIS_MNEMONIC_CVTSD2SS, Register(dst), RelocatedData(std::move(one_data)));
         thunk->Append(ZYDIS_MNEMONIC_DIVSS, Register(dst), Register(scratch));
 

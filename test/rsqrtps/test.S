@@ -32,4 +32,22 @@ rsqrtps_memory_rdi_impl:
   movaps [rdi], xmm0
   ret
 
+.global rsqrtps_memory_rsp
+rsqrtps_memory_rsp:
+  push rbp
+  mov rbp, rsp
+  mov rsp, rdi
+
+  call rsqrtps_memory_rsp_impl
+
+  mov rsp, rbp
+  pop rbp
+  ret
+
+.global rsqrtps_memory_rsp_impl
+rsqrtps_memory_rsp_impl:
+  rsqrtps xmm0, [rsp + 8]
+  movaps [rdi], xmm0
+  ret
+
 .section .note.GNU-stack, "", %progbits
