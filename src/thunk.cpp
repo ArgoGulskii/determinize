@@ -144,16 +144,16 @@ void Thunk::Dump(const char* prefix) {
     auto rc = ZydisDisassembleIntel(ZYDIS_MACHINE_MODE_LONG_64, offset, current_instruction,
                                     bytes.size() - offset, &instruction);
     if (!ZYAN_SUCCESS(rc)) {
-      printf("%s0x%016lx  <DECODING FAILED>", prefix, offset);
+      printf("%s0x%016zx  <DECODING FAILED>", prefix, offset);
       offset += 4;
       continue;
     }
 
-    printf("%s0x%016lx  %s\n", prefix, offset, instruction.text);
+    printf("%s0x%016zx  %s\n", prefix, offset, instruction.text);
     offset += instruction.info.length;
   }
 
-  printf("%s0x%016lx  [%zu bytes of data]\n", prefix, offset, data_.size());
+  printf("%s0x%016zx  [%zu bytes of data]\n", prefix, offset, data_.size());
 }
 
 }  // namespace determinize

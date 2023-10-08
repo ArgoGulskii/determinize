@@ -99,7 +99,7 @@ struct Thunk {
     operand.mem.index = ZYDIS_REGISTER_NONE;
     operand.mem.scale = 0;
     operand.mem.displacement = 0;
-    operand.mem.size = data.data.size();
+    operand.mem.size = static_cast<ZyanU16>(data.data.size());
 
     relocations_[instructions_.size()].emplace_back(Relocation{
         .operand = operand_index,

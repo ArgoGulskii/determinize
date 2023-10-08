@@ -1,13 +1,11 @@
 #pragma once
 
-// TODO: Windows
 #include <stddef.h>
 #include <stdlib.h>
-#include <sys/mman.h>
 
 static void* PageAlign(void* p) {
   uintptr_t value = reinterpret_cast<uintptr_t>(p);
-  return reinterpret_cast<void*>(value & ~4095UL);
+  return reinterpret_cast<void*>(value & ~4095ULL);
 }
 
 static void* NextPage(void* p) {
@@ -22,6 +20,10 @@ static size_t PointerRange(void* p, void* q) {
   if (result > 0) return result;
   return -result;
 }
+
+#if !defined(_WIN32)
+
+#include <sys/mman.h>
 
 static void* MapPage(void* page) {
   void* result = mmap(page, 4096, PROT_READ | PROT_WRITE | PROT_EXEC,
@@ -45,6 +47,29 @@ static void* MapRandomPage() {
   return result;
 }
 
+// TODO: Make this take a pointer and length.
 static bool Unprotect(void* p) {
   return mprotect(PageAlign(p), 4096, PROT_READ | PROT_WRITE | PROT_EXEC) == 0;
 }
+
+#else
+
+#include <Windows.h>
+
+static void* MapPage(void* page) {
+  return VirtualAlloc(page, 4096, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+}
+
+static void* MapRandomPage() {
+  void* result = MapPage(nullptr);
+  if (!result) abort();
+  return result;
+}
+
+// TODO: Make this take a pointer and length.
+static bool Unprotect(void* p) {
+  DWORD dummy;
+  return VirtualProtect(PageAlign(p), 4096, PAGE_EXECUTE_READWRITE, &dummy);
+}
+
+#endif

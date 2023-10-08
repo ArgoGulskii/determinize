@@ -1,10 +1,8 @@
 #include <determinize/determinize.h>
 
-// TODO: Windows
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 
 #include <algorithm>
 #include <map>
@@ -65,7 +63,8 @@ bool GenerateThunk(void* thunk_address, void* jump_target, void* relocation_begi
                                     current_instruction, 4096, &instruction);
     if (!ZYAN_SUCCESS(rc)) return false;
 
-    printf("  0x%016lx  %s\n", reinterpret_cast<long>(current_instruction), instruction.text);
+    printf("  0x%016zx  %s\n", reinterpret_cast<int64_t>(current_instruction),
+           instruction.text);
     offset += instruction.info.length;
     if (!thunk.Relocate(&instruction)) {
       return false;
@@ -98,8 +97,8 @@ bool Replace(void* replacement, void* target, size_t target_length) {
   if ((trampoline = g_trampoline_allocator.AllocateTrampoline(target, INT32_MAX))) {
     call_instructions.resize(5);
     call_instructions[0] = 0xE9;
-    int32_t trampoline_offset =
-        reinterpret_cast<intptr_t>(trampoline->Address()) - reinterpret_cast<intptr_t>(target) - 5;
+    int32_t trampoline_offset = static_cast<int32_t>(
+        reinterpret_cast<intptr_t>(trampoline->Address()) - reinterpret_cast<intptr_t>(target) - 5);
     memcpy(&call_instructions[1], &trampoline_offset, sizeof(trampoline_offset));
   } else {
     // jmp *0x0(%rip)
@@ -128,7 +127,6 @@ bool Replace(void* replacement, void* target, size_t target_length) {
   printf("trampoline: %p\n", trampoline->Address());
   printf("thunk: %p\n", thunk);
   memcpy(target, call_instructions.data(), call_instructions.size());
-  __builtin___clear_cache(target, static_cast<char*>(target) + call_instructions.size());
 
   return true;
 }
@@ -184,7 +182,8 @@ static std::optional<size_t> Determinize(Thunk* thunk, char* instruction) {
 
     default:
       fprintf(stderr, "UNHANDLED INSTRUCTION:\n");
-      fprintf(stderr, "  0x%016lx  %s\n", reinterpret_cast<long>(instruction), disasm.text);
+      fprintf(stderr, "  0x%016zx  %s\n", reinterpret_cast<int64_t>(instruction),
+              disasm.text);
       return {};
   }
 
@@ -244,7 +243,8 @@ bool Determinize(std::vector<void*> instruction_addresses) {
     auto trampoline_address = reinterpret_cast<intptr_t>(trampoline->Address());
     if (trampoline) {
       target[0] = 0xE9;
-      int32_t trampoline_offset = trampoline_address - reinterpret_cast<intptr_t>(target) - 5;
+      int32_t trampoline_offset =
+          static_cast<int32_t>(trampoline_address - reinterpret_cast<intptr_t>(target) - 5);
       memcpy(&target[1], &trampoline_offset, sizeof(trampoline_offset));
     } else {
       // jmp *0x0(%rip)
