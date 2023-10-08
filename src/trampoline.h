@@ -44,7 +44,7 @@ struct Page {
       return std::nullopt;
     }
 
-    Trampoline result(base_);
+    Trampoline result(base_ + allocated_);
     allocated_ += Trampoline::length;
     return result;
   }
