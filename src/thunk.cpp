@@ -46,8 +46,6 @@ bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
     auto& operand = insn->operands[0];
     if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
       ZyanU64 jump_target = insn->runtime_address + insn->info.length + operand.imm.value.s;
-      fprintf(stderr, "  0x%016zx  %s\n", insn->runtime_address, insn->text);
-      printf("jump target = 0x%016zx\n", jump_target);
       Append(insn->info.mnemonic, Immediate(2));
       Append(ZYDIS_MNEMONIC_JMP, Immediate(6));
       Append(ZYDIS_MNEMONIC_JMP, RelocatedData(&jump_target, sizeof(jump_target)));
