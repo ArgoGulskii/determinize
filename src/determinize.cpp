@@ -202,7 +202,7 @@ bool Determinize(std::vector<void*> instruction_addresses, const void* base_addr
   while (it != addrs.end()) {
     {
       char* target = reinterpret_cast<char*>(*it);
-      printf("\nPatching %p\n", PointerDifference(target, base_address));
+      debug("\nPatching %p\n", PointerDifference(target, base_address));
       std::optional<Trampoline> trampoline =
           g_trampoline_allocator.AllocateTrampoline(target, INT32_MAX);
 
