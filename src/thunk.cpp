@@ -8,8 +8,11 @@ namespace determinize {
 
 bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
   ZydisEncoderRequest req;
-  ZydisEncoderDecodedInstructionToEncoderRequest(&insn->info, insn->operands,
-                                                 insn->info.operand_count_visible, &req);
+  if (!ZYAN_SUCCESS(ZydisEncoderDecodedInstructionToEncoderRequest(
+          &insn->info, insn->operands, insn->info.operand_count_visible, &req))) {
+    fprintf(stderr, "Failed to translate decoded instruction to encoder request\n");
+    return false;
+  }
 
   if (insn->info.meta.branch_type != ZYDIS_BRANCH_TYPE_NONE) {
     // Conditional branches are annoying because they only support a relative jump, and we don't
@@ -125,13 +128,18 @@ std::vector<char> Thunk::EmitInstructions() {
   std::vector<ZydisEncoderRequest> instructions = instructions_;
   std::vector<char> result;
 
-  // Do two passes: one to figure out the lengths of our instructions, and one to actually emit
-  // our relocated instructions.
+  // Do three passes: one to figure out the lengths of our instructions in total to figure out
+  // where the data lives, one pass to figure out the length of an individual instruction again,
+  // since rip-relative indexing is relative to the start of the next instruction, and finally,
+  // one pass that emits the final product.
   size_t instructions_length = 0;
   for (size_t i = 0; i < instructions.size(); ++i) {
     ZyanU8 encoded[ZYDIS_MAX_INSTRUCTION_LENGTH];
     ZyanUSize encoded_length = sizeof(encoded);
-    ZydisEncoderEncodeInstruction(&instructions[i], encoded, &encoded_length);
+    if (!ZYAN_SUCCESS(ZydisEncoderEncodeInstruction(&instructions[i], encoded, &encoded_length))) {
+      fprintf(stderr, "Failed to encode instruction %zu in thunk (phase 1)\n", i);
+      abort();
+    }
     instructions_length += encoded_length;
   }
 
@@ -151,7 +159,11 @@ std::vector<char> Thunk::EmitInstructions() {
     auto relocations = relocations_.find(i);
     if (relocations != relocations_.end()) {
       // There has to be a better way of doing this...
-      ZydisEncoderEncodeInstruction(&instructions[i], encoded, &encoded_length);
+      if (!ZYAN_SUCCESS(
+              ZydisEncoderEncodeInstruction(&instructions[i], encoded, &encoded_length))) {
+        fprintf(stderr, "Failed to encode instruction %zu in thunk (phase 2)\n", i);
+        abort();
+      }
       size_t next_instruction = instruction_offset + encoded_length;
 
       for (auto [operand, offset] : relocations->second) {
@@ -160,7 +172,10 @@ std::vector<char> Thunk::EmitInstructions() {
       }
     }
 
-    ZydisEncoderEncodeInstruction(&instructions[i], encoded, &encoded_length);
+    if (!ZYAN_SUCCESS(ZydisEncoderEncodeInstruction(&instructions[i], encoded, &encoded_length))) {
+      fprintf(stderr, "Failed to encode instruction %zu in thunk (phase 3)\n", i);
+      abort();
+    }
     result.insert(result.end(), encoded, encoded + encoded_length);
     instruction_offset += encoded_length;
   }
