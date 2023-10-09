@@ -30,6 +30,6 @@ static bool Replace(T (*replacement)(Args..., ...), T (*target)(Args..., ...),
                  target_length);
 }
 
-bool Determinize(std::vector<void*> instruction_addresses);
+bool Determinize(std::vector<void*> instruction_addresses, const void* base_address = nullptr);
 
 }  // namespace determinize

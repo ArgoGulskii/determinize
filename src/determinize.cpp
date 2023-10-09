@@ -189,7 +189,7 @@ static std::optional<size_t> Determinize(Thunk* thunk, char* instruction) {
   return disasm.info.length;
 }
 
-bool Determinize(std::vector<void*> instruction_addresses) {
+bool Determinize(std::vector<void*> instruction_addresses, const void* base_address) {
   std::vector<char*> addrs;
   for (auto addr : instruction_addresses) {
     addrs.push_back(static_cast<char*>(addr));
@@ -202,6 +202,7 @@ bool Determinize(std::vector<void*> instruction_addresses) {
   while (it != addrs.end()) {
     {
       char* target = reinterpret_cast<char*>(*it);
+      printf("\nPatching %p\n", PointerDifference(target, base_address));
       std::optional<Trampoline> trampoline =
           g_trampoline_allocator.AllocateTrampoline(target, INT32_MAX);
 
@@ -277,7 +278,7 @@ bool Determinize(std::vector<void*> instruction_addresses) {
     }
     continue;
 next:
-    fprintf(stderr, "Failed to patch instruction at 0x%016zx\n", *it);
+    fprintf(stderr, "Failed to patch instruction at 0x%016zx\n", reinterpret_cast<intptr_t>(*it));
     ++it;
     continue;
   }

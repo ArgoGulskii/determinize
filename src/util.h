@@ -17,10 +17,14 @@ static void* NextPage(void* p) {
   return reinterpret_cast<void*>(value + 4096);
 }
 
-static size_t PointerRange(void* p, void* q) {
+static intptr_t PointerDifference(const void* p, const void* q) {
   auto x = reinterpret_cast<intptr_t>(p);
   auto y = reinterpret_cast<intptr_t>(q);
-  auto result = x - y;
+  return x - y;
+}
+
+static uintptr_t PointerRange(const void* p, const void* q) {
+  auto result = PointerDifference(p, q);
   if (result > 0) return result;
   return -result;
 }
