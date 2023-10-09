@@ -9,7 +9,7 @@ namespace determinize {
 bool Thunk::Relocate(ZydisDisassembledInstruction* insn) {
   ZydisEncoderRequest req;
   ZydisEncoderDecodedInstructionToEncoderRequest(&insn->info, insn->operands,
-                                                 insn->info.operand_count, &req);
+                                                 insn->info.operand_count_visible, &req);
 
   if (insn->info.meta.branch_type != ZYDIS_BRANCH_TYPE_NONE) {
     // Conditional branches are annoying because they only support a relative jump, and we don't
