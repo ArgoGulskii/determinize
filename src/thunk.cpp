@@ -178,8 +178,10 @@ std::vector<char> Thunk::EmitInstructions() {
     instruction_offset += encoded_length;
   }
 
-  result.resize(result.size() + nops_length);
-  ZydisEncoderNopFill(&*(result.end() - nops_length), nops_length);
+  if (nops_length != 0) {
+    result.resize(result.size() + nops_length);
+    ZydisEncoderNopFill(&result[result.size() - nops_length], nops_length);
+  }
   return result;
 }
 
